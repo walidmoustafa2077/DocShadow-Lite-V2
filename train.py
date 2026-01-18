@@ -31,7 +31,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -49,6 +49,22 @@ from src.utils import (
     create_loss_breakdown_visualization,
     ResearchTracker
 )
+
+
+class GPUMonitor:
+    """Monitor GPU usage and memory"""
+    
+    def __init__(self):
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    def log_gpu_stats(self):
+        """Log current GPU statistics"""
+        if self.device.type == 'cuda':
+            allocated = torch.cuda.memory_allocated() / 1024**3
+            reserved = torch.cuda.memory_reserved() / 1024**3
+            total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+            print(f"[GPU] Allocated: {allocated:.2f}GB | Reserved: {reserved:.2f}GB | Total: {total:.2f}GB")
+            torch.cuda.empty_cache()
 
 
 class AverageMeter:
@@ -93,6 +109,10 @@ class Trainer:
         print(f"Using device: {self.device}")
         print(f"Training Stage: {stage}")
         
+        # GPU monitoring
+        self.gpu_monitor = GPUMonitor()
+        self.gpu_monitor.log_gpu_stats()
+        
         # Setup directories
         self.checkpoint_dir = Path(config['logging']['checkpoint_dir']) / f"stage{stage}"
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -115,7 +135,7 @@ class Trainer:
         
         # Setup mixed precision training
         self.use_amp = config['hardware'].get('mixed_precision', True)
-        self.scaler = GradScaler() if self.use_amp else None
+        self.scaler = GradScaler('cuda' if self.use_amp and self.device.type == 'cuda' else 'cpu') if self.use_amp else None
         
         # Setup tensorboard
         self.writer = SummaryWriter(log_dir=str(self.log_dir))
@@ -318,7 +338,7 @@ class Trainer:
             self.optimizer.zero_grad()
             
             if self.use_amp:
-                with autocast():
+                with autocast(device_type='cuda' if self.device.type == 'cuda' else 'cpu'):
                     output = self.model(input_img)
                     loss, loss_dict = self.criterion(output, target_img)
                 
@@ -351,6 +371,10 @@ class Trainer:
                     self.loss_history['l1'].append(loss_dict['l1'])
                 if 'lpips' in loss_dict:
                     self.loss_history['lpips'].append(loss_dict['lpips'])
+                
+                # Log GPU stats every 10 logging intervals
+                if (self.global_step // self.config['logging']['log_interval']) % 10 == 0:
+                    self.gpu_monitor.log_gpu_stats()
             
             self.global_step += 1
         
@@ -491,13 +515,17 @@ class Trainer:
         
         # Save debug samples at specific epochs
         if epoch == 0 or (epoch + 1) % 5 == 0:
-            save_debug_samples(
-                epoch=epoch,
-                model=self.model,
-                val_loader=self.val_loader,
-                device=self.device,
-                save_dir=str(self.debug_dir)
-            )
+            try:
+                save_debug_samples(
+                    epoch=epoch,
+                    model=self.model,
+                    val_loader=self.val_loader,
+                    device=self.device,
+                    save_dir=str(self.debug_dir)
+                )
+            except Exception as e:
+                print(f"\n⚠️  Warning: Failed to save debug samples at epoch {epoch}: {e}")
+                print("   Continuing training without debug visualization...")
         
         # Log sample images
         if epoch % self.config['logging']['save_interval'] == 0:

@@ -116,22 +116,32 @@ class AttentionAnalyzer:
             shadow_mask = shadow_mask.float()
             # Resize if needed
             if shadow_mask.shape != input_mask.shape:
+                # Handle dimension mismatch - ensure shadow_mask is (B, C, H, W)
+                if shadow_mask.dim() == 3:
+                    shadow_mask = shadow_mask.unsqueeze(1)
                 shadow_mask = F.interpolate(
                     shadow_mask, size=input_mask.shape[2:], mode='nearest'
                 )
             
-            # Correlation between predicted attention and actual shadow
-            in_mask_flat = input_mask.view(-1)
-            shadow_flat = shadow_mask.view(-1)
+            # Ensure both tensors have the same batch size
+            min_batch = min(input_mask.shape[0], shadow_mask.shape[0])
+            input_mask_batch = input_mask[:min_batch]
+            shadow_mask_batch = shadow_mask[:min_batch]
             
-            correlation = torch.corrcoef(
-                torch.stack([in_mask_flat, shadow_flat])
-            )[0, 1].item()
-            stats['shadow_correlation'] = correlation if not np.isnan(correlation) else 0.0
+            # Correlation between predicted attention and actual shadow
+            in_mask_flat = input_mask_batch.view(-1)
+            shadow_flat = shadow_mask_batch.view(-1)
+            
+            # Only compute if we have enough samples
+            if len(in_mask_flat) > 1 and len(shadow_flat) > 1:
+                correlation = torch.corrcoef(
+                    torch.stack([in_mask_flat, shadow_flat])
+                )[0, 1].item()
+                stats['shadow_correlation'] = correlation if not np.isnan(correlation) else 0.0
             
             # Shadow vs Non-Shadow activation ratio
-            shadow_region = input_mask[shadow_mask > 0.5]
-            non_shadow_region = input_mask[shadow_mask <= 0.5]
+            shadow_region = input_mask_batch[shadow_mask_batch > 0.5]
+            non_shadow_region = input_mask_batch[shadow_mask_batch <= 0.5]
             
             if len(shadow_region) > 0 and len(non_shadow_region) > 0:
                 stats['shadow_activation'] = shadow_region.mean().item()
@@ -281,7 +291,8 @@ def save_debug_samples(
         
         # Also save individual attention mask statistics
         analyzer = AttentionAnalyzer()
-        stats = analyzer.analyze(in_mask[:num_samples], out_mask[:num_samples], shadow_mask)
+        shadow_mask_sliced = shadow_mask[:num_samples] if shadow_mask is not None else None
+        stats = analyzer.analyze(in_mask[:num_samples], out_mask[:num_samples], shadow_mask_sliced)
         
         # Print statistics
         print(f"\n{'='*60}")
