@@ -331,7 +331,8 @@ def create_dataloaders(
     stage: int = 1,
     batch_size: int = 16,
     num_workers: int = 0,
-    pin_memory: bool = True
+    pin_memory: bool = True,
+    persistent_workers: bool = False
 ) -> Tuple[DataLoader, DataLoader]:
     """
     Create training and validation dataloaders.
@@ -343,6 +344,7 @@ def create_dataloaders(
         batch_size: Batch size
         num_workers: Number of data loading workers
         pin_memory: Pin memory for faster GPU transfer
+        persistent_workers: Keep worker processes alive (recommended for num_workers > 0)
         
     Returns:
         train_loader, test_loader
@@ -376,7 +378,8 @@ def create_dataloaders(
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
-        drop_last=True
+        drop_last=True,
+        persistent_workers=persistent_workers if num_workers > 0 else False
     )
     
     test_loader = DataLoader(
@@ -384,7 +387,8 @@ def create_dataloaders(
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
-        pin_memory=pin_memory
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers if num_workers > 0 else False
     )
     
     return train_loader, test_loader

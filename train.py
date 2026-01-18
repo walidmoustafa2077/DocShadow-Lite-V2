@@ -22,9 +22,17 @@ import sys
 import argparse
 import time
 import yaml
+import warnings
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+
+# Suppress XLA/CUDA warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', message='.*cuFFT.*')
+warnings.filterwarnings('ignore', message='.*cuDNN.*')
+warnings.filterwarnings('ignore', message='.*cuBLAS.*')
 
 import torch
 import torch.nn as nn
@@ -214,11 +222,13 @@ class Trainer:
             stage=self.stage,
             batch_size=stage_config['batch_size'],
             num_workers=self.config['hardware']['num_workers'],
-            pin_memory=self.config['hardware']['pin_memory']
+            pin_memory=self.config['hardware']['pin_memory'],
+            persistent_workers=self.config['hardware'].get('persistent_workers', False)
         )
         
         print(f"Training samples: {len(train_loader.dataset)}")
         print(f"Validation samples: {len(val_loader.dataset)}")
+        print(f"Data workers: {self.config['hardware']['num_workers']}, Persistent: {self.config['hardware'].get('persistent_workers', False)}")
         
         return train_loader, val_loader
     
@@ -448,7 +458,7 @@ class Trainer:
                 target_img = batch['target_high'].to(self.device)
             
             if self.use_amp:
-                with autocast():
+                with autocast(device_type='cuda' if self.device.type == 'cuda' else 'cpu'):
                     # Get attention masks for Stage 1
                     if self.stage == 1:
                         output, attn_in, attn_out = self.model(input_img, return_attention=True)
