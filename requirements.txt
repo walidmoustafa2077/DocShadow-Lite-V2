@@ -1,0 +1,31 @@
+# LP-IOANet Requirements
+# Document Shadow Removal
+
+# Core dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.21.0
+Pillow>=9.0.0
+PyYAML>=6.0
+
+# Training & Logging
+tensorboard>=2.12.0
+tqdm>=4.65.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# Perceptual loss (optional but recommended)
+lpips>=0.1.4
+
+# Metrics
+scikit-image>=0.20.0
+
+# ONNX export (optional)
+onnx>=1.14.0
+onnxruntime>=1.15.0
+
+# Development (optional)
+black>=23.0.0
+flake8>=6.0.0
+pytest>=7.3.0

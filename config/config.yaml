@@ -1,0 +1,106 @@
+# LP-IOANet Configuration File
+# High-Resolution Document Shadow Removal
+
+# Model Configuration
+model:
+  backbone: "mobilenet_v2"
+  pretrained: true
+  
+  # IOANet (Stage 1) settings
+  ioanet:
+    input_size: [192, 256]  # Height x Width for low-res processing
+    bottleneck_channels: 1280
+    
+  # LPTN-Lite Refiner settings  
+  lptn_lite:
+    hidden_channels: 16
+    activation: "leaky_relu"  # Options: leaky_relu, relu6 (for quantization)
+    
+  # Laplacian Pyramid levels
+  pyramid_levels: 2
+  full_resolution: [768, 1024]  # Height x Width
+
+# Dataset Configuration
+dataset:
+  train_dir: "Dataset/train"
+  test_dir: "Dataset/test"
+  
+  # Image normalization
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+  
+  # Augmentation
+  augmentation:
+    horizontal_flip: true
+    vertical_flip: false
+    rotation_range: 5
+    brightness_range: [0.9, 1.1]
+    
+# Training Configuration
+training:
+  # Stage 1: Low-Resolution IOANet
+  stage1:
+    epochs: 1000
+    batch_size: 16
+    learning_rate: 0.0001
+    weight_decay: 0.0001
+    scheduler: "cosine"
+    warmup_epochs: 10
+    
+    # Loss weights
+    loss:
+      l1_weight: 10.0
+      lpips_weight: 5.0
+      
+  # Stage 2: High-Resolution LP-IOANet  
+  stage2:
+    epochs: 200
+    batch_size: 4
+    learning_rate: 0.0001
+    freeze_ioanet: true
+    
+    # Loss weights (L1 only per paper section 4.1)
+    loss:
+      l1_weight: 1.0
+      lpips_weight: 0.0
+
+# Optimizer
+optimizer:
+  name: "adam"
+  betas: [0.9, 0.999]
+  eps: 0.00000001
+
+# Hardware
+hardware:
+  device: "cuda"
+  num_workers: 4
+  pin_memory: true
+  mixed_precision: true
+
+# Logging & Checkpoints
+logging:
+  log_interval: 100
+  save_interval: 10
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+  debug_dir: "debug_samples"  # Debug visualization output
+  
+# Debug & Research Verification
+debug:
+  # Save debug samples every N epochs (0 = first epoch, then every 5)
+  sample_interval: 5
+  
+  # Attention mask monitoring
+  attention_monitoring: true
+  attention_alert_threshold: 0.02  # Alert if std drops below this
+  
+  # Stage 1 readiness criteria
+  stage1_readiness:
+    mae_threshold: 0.05
+    min_epochs: 100
+    attention_std_threshold: 0.05
+  
+# Evaluation
+evaluation:
+  metrics: ["psnr", "ssim", "lpips"]
+  save_visualizations: true

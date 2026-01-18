@@ -1,0 +1,166 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+__pycache__/
+
+# PyTorch/Deep Learning
+checkpoints/
+logs/
+runs/
+*.pth
+*.pt
+*.ckpt
+saved_models/
+
+# Training artifacts
+debug_samples/
+training_logs/
+tensorboard_logs/
+*.log
+
+# Dataset
+Dataset/
+data/
+datasets/
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Images and outputs
+output/
+outputs/
+results/
+predictions/
+*.png
+*.jpg
+*.jpeg
+*.bmp
+results_*.png
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+*.cache
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+.directory
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Large files
+*.pth
+*.pt
+*.ckpt
+*.weights
+*.model
+
+# Model exports
+*.onnx
+*.torchscript
+*.jit
+
+# Metrics and evaluation
+metrics.json
+evaluation_results.json
+*.csv
+
+# Miscellaneous
+.gitignore_global
+*.bak
+*.backup
+*_backup
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Conda
+.conda/
+environment.yml.lock
+
+# Documentation builds
+docs/_build/
+site/
+
+# VS Code settings (if using local settings)
+.vscode/settings.json
+.vscode/launch.json
+
+# Pyre type checker
+.pyre/
+
+# Research/Analysis
+analysis/
+notebooks_local/
+experiments/
+*.pkl
+*.pickle
+
+# Model checkpoints
+best_model.pth
+last_model.pth
+stage1_best.pth
+stage2_best.pth
+
+# Keep important files
+!.gitkeep
+!README.md
+!config/
+!src/
+!train.py
+!evaluate.py
+!inference.py
