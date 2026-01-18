@@ -118,10 +118,9 @@ class FeatureBlendingDecoder(nn.Module):
             nn.ReLU(inplace=True)
         )
         
-        # Final output projection
+        # Final output projection (no Tanh - keep output in same range as input)
         self.final = nn.Sequential(
-            nn.ConvTranspose2d(16, 3, kernel_size=4, stride=2, padding=1),
-            nn.Tanh()
+            nn.ConvTranspose2d(16, 3, kernel_size=4, stride=2, padding=1)
         )
 
     def forward(
@@ -250,7 +249,8 @@ class IOANet(nn.Module):
         
         # Input Attention - weight encoder toward shadow regions
         attn_in = self.input_attn(x)
-        x_attended = x * attn_in + x * (1 - attn_in) * 0.5  # Soft attention
+        # Let encoder ONLY see the shadow area (sharp attention)
+        x_attended = x * attn_in
         
         # Encoder forward pass
         e1 = self.enc1(x_attended)

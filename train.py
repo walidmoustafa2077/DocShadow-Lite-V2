@@ -589,8 +589,16 @@ class Trainer:
             else:
                 train_metrics = self._train_epoch_stage2(epoch)
             
-            # Validate
-            val_metrics = self._validate(epoch)
+            # Validate only every 5 epochs to keep GPU computing (skip for speed)
+            if epoch == 0 or epoch % 5 == 0 or epoch == num_epochs - 1:
+                val_metrics = self._validate(epoch)
+                is_best = val_metrics['val_loss'] < self.best_loss
+                if is_best:
+                    self.best_loss = val_metrics['val_loss']
+            else:
+                # Skip validation - keep GPU computing
+                val_metrics = {'val_loss': float('inf'), 'val_mae': 0, 'val_metrics': {}}
+                is_best = False
             
             # Update scheduler
             self.scheduler.step()
